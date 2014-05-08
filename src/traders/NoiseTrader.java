@@ -105,7 +105,6 @@ public class NoiseTrader extends Trader {
 				int halfOppVol = lob.volumeOnSide(opposingSide)/2;
 				vol = ( (vol < halfOppVol) ? vol : halfOppVol );
 				ordersToGo.add(new Order(time, false, vol, tId, side));
-				System.out.println("\nMarket order at time: " + time);
 			} else if ((p < (prob_market+prob_limit)) || noOrdersInBook()) {
 				// limit order
 				ordersToGo.add(limitOrder(lob,side, time, verbose));
@@ -181,7 +180,6 @@ public class NoiseTrader extends Trader {
 				System.out.println("NT submitting crossing limit...");
 			}
 			// Crossing limit order
-			System.out.println("Crossing limit");
 			price = ((side == "bid") ? 
 								   bestOffer : bestBid);
 		} else if (p2 < prob_cross+prob_deeper) {
@@ -189,7 +187,6 @@ public class NoiseTrader extends Trader {
 				System.out.println("NT submitting deep limit...");
 			}
 			// Limit order deep in book
-			System.out.println("Deep limit");
 			double deviate = xmin*Math.pow( (1-generator.nextDouble()), 
 											(-1/(beta-1)) );
 			price = ((side=="bid") ? bestBid-deviate : bestOffer+deviate);
@@ -198,7 +195,6 @@ public class NoiseTrader extends Trader {
 				System.out.println("NT submitting limit at best...");
 			}
 			// Limit order at best
-			System.out.println("Limit at best");
 			price = ((side=="bid") ?
 			bestBid : bestOffer);
 		} else {
@@ -206,7 +202,6 @@ public class NoiseTrader extends Trader {
 				System.out.println("NT submitting limit inside spread...");
 			}
 			// Limit order inside the spread (U distributed)
-			System.out.println("InSpread limit");
 			double diff = (bestOffer-tickSize) - (bestBid+tickSize);
 			double increment = generator.nextDouble()*diff;
 			price = bestBid+tickSize+increment;

@@ -68,6 +68,9 @@ public class Market {
 	public void run(int timesteps, boolean verbose) {
 		
 		for (int time = 1; time <= timesteps; time++) {
+			if (time%1000 == 0) {
+				System.out.println("time = " + time);
+			}
 			if (verbose) {
 				System.out.println("----- time = " + time + 
 									"-------------------------------------------------------------------");

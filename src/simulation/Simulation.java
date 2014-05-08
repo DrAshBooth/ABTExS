@@ -67,11 +67,13 @@ public class Simulation {
 	
 	
 	private static void marketTrial(boolean verbose) {
+		System.out.println("Beginning simulation...\n");
 		Properties prop = getProperties("config.properties");
 		int timesteps = Integer.parseInt(prop.getProperty("timesteps"));
 		Market mkt = new Market(prop, "/Users/user/Desktop/");
 		mkt.run(timesteps, verbose);
 		mkt.writeDaysData("trades.csv", "quotes.csv");
+		System.out.println("\nFinished simulation...");
 	}
 	
 	
@@ -104,6 +106,6 @@ public class Simulation {
 	
 	public static void main(String[] args) {
 		//testLob();
-		marketTrial(true);
+		marketTrial(false);
 	}
 }
