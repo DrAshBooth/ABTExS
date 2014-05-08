@@ -8,6 +8,9 @@ import java.util.Properties;
 import lob.Order;
 import lob.OrderBook;
 
+// TODO inSpread limits are causing trades from time to time, they shouldn't
+// TODO I think the problem occurs when an inspread limit is hit
+
 public class Simulation {
 	
 	private static void testLob() {
@@ -63,10 +66,11 @@ public class Simulation {
 	}
 	
 	
-	private static void marketTrial( ) {
+	private static void marketTrial(boolean verbose) {
 		Properties prop = getProperties("config.properties");
+		int timesteps = Integer.parseInt(prop.getProperty("timesteps"));
 		Market mkt = new Market(prop, "/Users/user/Desktop/");
-		mkt.run(20, true);
+		mkt.run(timesteps, verbose);
 		mkt.writeDaysData("trades.csv", "quotes.csv");
 	}
 	
@@ -92,7 +96,6 @@ public class Simulation {
 		}
 		return prop;
 		
-		
 	}
 	
 	public static void print(String string) {
@@ -101,6 +104,6 @@ public class Simulation {
 	
 	public static void main(String[] args) {
 		//testLob();
-		marketTrial();
+		marketTrial(true);
 	}
 }

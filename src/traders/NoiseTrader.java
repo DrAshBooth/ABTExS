@@ -83,17 +83,20 @@ public class NoiseTrader extends Trader {
 	}
 
 	@Override
-	public ArrayList<Order> getOrders(OrderBook lob, int time) {
+	public ArrayList<Order> getOrders(OrderBook lob, int time, boolean verbose) {
 		ArrayList<Order> ordersToGo = 
 				new ArrayList<Order>();
 		if ((lob.volumeOnSide("bid")==0) || (lob.volumeOnSide("offer")==0) ) {
-			populateBook(lob, ordersToGo, time);
+			populateBook(lob, ordersToGo, time, verbose);
 		} else {
 			// Usual NT logic
 			String side = ((generator.nextBoolean()) ? "bid" : "offer");
 			double p = generator.nextDouble();
 			if (p < prob_market) {
 				// market order
+				if (verbose) {
+					System.out.println("NT submitting market order...");
+				}
 				int vol;
 				vol = (int)Math.round(Math.exp(market_mu+
 										(market_sigma*generator.nextDouble())));
@@ -102,16 +105,22 @@ public class NoiseTrader extends Trader {
 				int halfOppVol = lob.volumeOnSide(opposingSide)/2;
 				vol = ( (vol < halfOppVol) ? vol : halfOppVol );
 				ordersToGo.add(new Order(time, false, vol, tId, side));
+				System.out.println("\nMarket order at time: " + time);
 			} else if ((p < (prob_market+prob_limit)) || noOrdersInBook()) {
 				// limit order
-				ordersToGo.add(limitOrder(lob,side, time));
+				ordersToGo.add(limitOrder(lob,side, time, verbose));
 			} else {
 				// cancel order
-				Order oldestOrder = oldestOrder();
+				// TODO not sure that this actually gets the oldest
+				storedQuote oldestOrder = oldestOrder();
+				if (verbose) {
+					System.out.println("NT cancelling order: tId=" +
+										tId + "\tqId=" + oldestOrder.getqId());
+				}
 				lob.cancelOrder(oldestOrder.getSide(), 
 								oldestOrder.getqId(),
 								time);
-				this.orders.remove(oldestOrder.getqId());
+				this.ordersInBook.remove(oldestOrder.getqId());
 			}
 		}
 		return ordersToGo;
@@ -119,10 +128,14 @@ public class NoiseTrader extends Trader {
 	
 	private void populateBook(OrderBook lob, 
 							  ArrayList<Order> ordersToGo,
-							  int time) {
+							  int time,
+							  boolean verbose) {
 		Order bid;
 		Order offer;
 		if ((lob.volumeOnSide("bid")==0) && (lob.volumeOnSide("offer")==0)) {
+			if (verbose) {
+				System.out.println("LOB empty, NT adding bid and offer...");
+			}
 			// bid
 			int volB = (int)Math.round(Math.exp(limit_mu+
 										(limit_sigma*generator.nextDouble())));
@@ -134,6 +147,9 @@ public class NoiseTrader extends Trader {
 			ordersToGo.add(bid);
 			ordersToGo.add(offer);
 		} else if (lob.volumeOnSide("bid")==0) {
+			if (verbose) {
+				System.out.println("bid book empty, NT adding bid...");
+			}
 			// submit a bid
 			double price = lob.getBestOffer()-default_spread;
 			int vol = (int)Math.round(Math.exp(limit_mu+
@@ -141,6 +157,9 @@ public class NoiseTrader extends Trader {
 			bid = new Order(time, true, vol, tId, "bid", price);
 			ordersToGo.add(bid);
 		} else if (lob.volumeOnSide("offer")==0){
+			if (verbose) {
+				System.out.println("offer book empty, NT adding offer...");
+			}
 			// submit an ask
 			double price = lob.getBestBid()+default_spread;
 			int vol = (int)Math.round(Math.exp(limit_mu+
@@ -150,30 +169,47 @@ public class NoiseTrader extends Trader {
 		} 
 	}
 	
-	private Order limitOrder(OrderBook lob, String side, int time) {
+	private Order limitOrder(OrderBook lob, String side, int time, boolean verbose) {
 		int vol;
 		double price;
 		double bestBid = lob.getBestBid();
 		double bestOffer = lob.getBestOffer();
+		double tickSize = lob.getTickSize();
 		double p2 = generator.nextDouble();
 		if (p2 < prob_cross) {
+			if (verbose) {
+				System.out.println("NT submitting crossing limit...");
+			}
 			// Crossing limit order
+			System.out.println("Crossing limit");
 			price = ((side == "bid") ? 
 								   bestOffer : bestBid);
-		} else if (p2 < (prob_cross+prob_inside)) {
-			// Limit order inside the spread (U distributed)
-			double increment = generator.nextDouble()*(bestOffer-bestBid);
-			price = bestBid+increment;
-		} else if (p2 < (prob_cross+prob_inside+prob_at)) {
-			// Limit order at best
-			price = ((side=="bid") ?
-								bestBid : bestOffer);
-		} else {
+		} else if (p2 < prob_cross+prob_deeper) {
+			if (verbose) {
+				System.out.println("NT submitting deep limit...");
+			}
 			// Limit order deep in book
+			System.out.println("Deep limit");
 			double deviate = xmin*Math.pow( (1-generator.nextDouble()), 
-										   (-1/(beta-1)) );
+											(-1/(beta-1)) );
+			price = ((side=="bid") ? bestBid-deviate : bestOffer+deviate);
+		} else if ((p2 < (prob_cross+prob_deeper+prob_at)) || (lob.getSpread()<=(tickSize*2))) {
+			if (verbose) {
+				System.out.println("NT submitting limit at best...");
+			}
+			// Limit order at best
+			System.out.println("Limit at best");
 			price = ((side=="bid") ?
-					 bestBid-deviate : bestOffer+deviate);
+			bestBid : bestOffer);
+		} else {
+			if (verbose) {
+				System.out.println("NT submitting limit inside spread...");
+			}
+			// Limit order inside the spread (U distributed)
+			System.out.println("InSpread limit");
+			double diff = (bestOffer-tickSize) - (bestBid+tickSize);
+			double increment = generator.nextDouble()*diff;
+			price = bestBid+tickSize+increment;
 		}
 		vol = (int)Math.round(Math.exp(limit_mu+
 										(limit_sigma*generator.nextDouble())));

@@ -20,7 +20,7 @@ public abstract class Trader {
 	private int numAssets;
 	private ArrayList<Trade> blotter = new ArrayList<Trade>();
 	// key: qId, value: order currently in the book
-	public HashMap<Integer, Order> orders = new HashMap<Integer, Order>();
+	public HashMap<Integer, storedQuote> ordersInBook = new HashMap<Integer, storedQuote>();
 	protected Random generator = new Random();
 	
 	public Trader(int tId, double cash, int numAssets) {
@@ -32,24 +32,32 @@ public abstract class Trader {
 	
 	public void addOrder(Order order) {
 		int qId = order.getqId();
-		orders.put(qId, order);
+		ordersInBook.put(qId, new storedQuote(order.getTimestamp(), 
+											  order.getQuantity(),
+											  order.getSide(), 
+											  order.getPrice(),
+											  qId));
 	}
 	
 	public void delOrder(int qId) {
-		orders.remove(qId);
+		ordersInBook.remove(qId);
 	}
 	
 	public void bookkeep(Trade t) {
-		// sometimes NTs will trade with themselves. need to catch that below
-		boolean nt_buyerANDseller = ( (t.getBuyer()==this.tId) && (t.getSeller()==this.tId));
 		if (this.tId == t.getProvider()) { // if my order was sat in the book
 			int orderID = t.getOrderHit(); // Which order was affected 
-			if (orders.containsKey(orderID)) {
-				int originalQty = orders.get(orderID).getQuantity();
-				if (originalQty <= t.getQty()) { // whole order hit
-					orders.remove(orderID);
+			if (ordersInBook.containsKey(orderID)) {
+				storedQuote sq = ordersInBook.get(orderID);
+				int originalQty = sq.getQuantity();
+				if (t.getQty() < originalQty ) { // need to update
+					sq.setQuantity(originalQty-t.getQty());
+				} else if (originalQty == t.getQty()) { //whole order hit
+					ordersInBook.remove(orderID);
+					// TODO check lob for order, if it exist, something is wrong
+				} else { 
+					throw new IllegalArgumentException("What?!?");
 				}
-			} else if (!nt_buyerANDseller) {
+			} else {
 				throw new IllegalStateException("Trader told his order was hit but he has no record of the order!");
 			}
 		}
@@ -74,17 +82,17 @@ public abstract class Trader {
 		iTraded(bought, price, qty);
 	}
 	
-	protected Order oldestOrder() {
+	protected storedQuote oldestOrder() {
 		int oldestID = -1;
 		int oldestTime = Integer.MAX_VALUE;
-		for (Map.Entry<Integer, Order> entry : orders.entrySet()) {
+		for (Map.Entry<Integer, storedQuote> entry : ordersInBook.entrySet()) {
 			int quoteTime = entry.getValue().getTimestamp();
 			if (quoteTime< oldestTime) {
 				oldestTime = quoteTime;
 				oldestID = entry.getKey();
 			}
 		}
-		return orders.get(oldestID);
+		return ordersInBook.get(oldestID);
 	}
 	
 	/**
@@ -94,7 +102,7 @@ public abstract class Trader {
 	 */
 	protected abstract void iTraded(boolean bought, double price, int qty);
 	
-	public abstract ArrayList<Order> getOrders(OrderBook lob, int time);
+	public abstract ArrayList<Order> getOrders(OrderBook lob, int time, boolean verbose);
 	
 	/**
 	 * Update the internal parameters of the trader given changes in the lob
@@ -105,7 +113,50 @@ public abstract class Trader {
 	public abstract void update(OrderBook lob);
 	
 	protected boolean noOrdersInBook() {
-		return this.orders.isEmpty();
+		return this.ordersInBook.isEmpty();
+	}
+	
+	class storedQuote {
+		private int timestamp;
+		private int quantity;
+		private String side;
+		private double price;
+		private int qId;
+
+		public storedQuote(int time, int quantity, 
+						   String side, double price,
+						   int qId) {
+			this.timestamp = time;
+			this.side = side;
+			this.quantity = quantity;
+			this.price = price;
+			this.qId = qId;
+		}
+		
+		@Override
+		public String toString() {
+			return quantity + "\t@\t" + price + 
+					"\tt=" + timestamp + "\tqId=" + qId +"\n";
+		}
+
+		public int getQuantity() {
+			return quantity;
+		}
+		public void setQuantity(int quantity) {
+			this.quantity = quantity;
+		}
+		public int getTimestamp() {
+			return timestamp;
+		}
+		public String getSide() {
+			return side;
+		}
+		public double getPrice() {
+			return price;
+		}
+		public int getqId() {
+			return qId;
+		}
 	}
 
 	@Override
@@ -115,9 +166,16 @@ public abstract class Trader {
 		fileStr.write(" Cash = " + cash + "\n");
 		fileStr.write(" Number of assets = " + numAssets + "\n");
 		fileStr.write(" Blotter:\n" + blotter + "\n");
-		fileStr.write(" Orders currently in book:\n" + orders);
+		fileStr.write(" Orders currently in book:\n");
+		for (Map.Entry<Integer, storedQuote> entry : ordersInBook.entrySet()) {
+			fileStr.write(entry.getValue().toString());
+		}
 		fileStr.write("\n --------------------------------\n");
 		return fileStr.toString();
+	}
+
+	public int gettId() {
+		return tId;
 	}
 	
 }

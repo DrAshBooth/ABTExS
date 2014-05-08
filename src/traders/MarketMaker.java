@@ -14,7 +14,7 @@ import lob.*;
  * their income from the difference between their bids and offers. If one or 
  * both limit orders is executed, it will be replaced by a new one the next time 
  * the market maker is chosen to trade. Each round, the market maker updates 
- * a prediction for the sign of the next period’s order using a simple $w$
+ * a prediction for the sign of the next period���s order using a simple $w$
  * period rolling-mean estimate. When a market maker predicts that a buy order 
  * will arrive next, she will set her sell limit order volume to a uniformly 
  * distributed random number between v_min and v_max and her buy limit 
@@ -66,15 +66,15 @@ public class MarketMaker extends Trader {
 	}
 
 	@Override
-	public ArrayList<Order> getOrders(OrderBook lob, int time) {
+	public ArrayList<Order> getOrders(OrderBook lob, int time, boolean verbose) {
 		ArrayList<Order> ordersToGo = new ArrayList<Order>();
-		if ( (this.orders.size() != 2)  || (nextSignPred != lastSignPred) ) {
+		if ( (this.ordersInBook.size() != 2)  || (nextSignPred != lastSignPred) ) {
 			// remove all current orders from lob
-			for(Integer orderId: this.orders.keySet()) {
-				String side = this.orders.get(orderId).getSide();
+			for(Integer orderId: this.ordersInBook.keySet()) {
+				String side = this.ordersInBook.get(orderId).getSide();
 				lob.cancelOrder(side, orderId, time);
 			}
-			this.orders.clear();
+			this.ordersInBook.clear();
 			
 			// Submit new bid and offer
 			double bidPrice = lob.getBestBid();

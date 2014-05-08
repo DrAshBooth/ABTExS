@@ -11,9 +11,9 @@ import lob.*;
  * equal probability. The initial volume h0 of a large order is drawn from a 
  * uniform distribution between h_min and h_max. To execute the large order, 
  * the fundamental agent looks at the current volume available at the opposite 
- * best price, Φt. If the remaining volume of his large order, ht, is less than 
- * Φt the agent sets this periods volume to vt = ht, otherwise he takes all 
- * available volume at the best price vt = Φt. For simplicity fundamental 
+ * best price, ��t. If the remaining volume of his large order, ht, is less than 
+ * ��t the agent sets this periods volume to vt = ht, otherwise he takes all 
+ * available volume at the best price vt = ��t. For simplicity fundamental 
  * agents are assumed to only utilise market orders.
  * 
  *  MUST RUN UPDATE BEFORE SUBMITORDERS()!!!
@@ -50,7 +50,7 @@ public class FundamentalTrader extends Trader {
 	 * @see traders.Trader#submitOrders(lob.OrderBook, int)
 	 */
 	@Override
-	public ArrayList<Order> getOrders(OrderBook lob, int time) {
+	public ArrayList<Order> getOrders(OrderBook lob, int time, boolean verbose) {
 		ArrayList<Order> ordersToGo = new ArrayList<Order>();
 		int volAtBest;
 		String side;

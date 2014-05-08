@@ -66,18 +66,23 @@ public class Market {
 	}
 	
 	public void run(int timesteps, boolean verbose) {
+		
 		for (int time = 1; time <= timesteps; time++) {
+			if (verbose) {
+				System.out.println("----- time = " + time + 
+									"-------------------------------------------------------------------");
+			}
 			Trader tdr;
 			// if either book empty, pick NT to trade
 			if ((lob.volumeOnSide("bid")==0) || (lob.volumeOnSide("offer")==0)) {
 				int ntIdx = generator.nextInt(tradersByType.get("NT").size());
 				tdr = tradersByType.get("NT").get(ntIdx);
-				submitOrder(tdr,time); // deals with clearing and bookkeeping
+				submitOrder(tdr,time, verbose); // deals with clearing and bookkeeping
 			} else {
 				// pick random trader
 				int randTId = tIds.get(generator.nextInt(tIds.size()));
 				tdr = tradersById.get(randTId);
-				submitOrder(tdr,time);
+				submitOrder(tdr,time, verbose);
 			}
 			//update all traders
 			for (int tId : tIds) {
@@ -85,18 +90,19 @@ public class Market {
 			}
 			if (verbose) {
 				System.out.println(this.toString());
+				System.out.println("----------------------------------------------------------------------------------");
 			}
 		}
 	}
 	
-	private void submitOrder(Trader tdr, int time) {
+	private void submitOrder(Trader tdr, int time, boolean verbose) {
 		ArrayList<Order> quotes;
-		quotes = tdr.getOrders(lob, time);
+		quotes = tdr.getOrders(lob, time, verbose);
 		for (Order q : quotes) {
 			// add sign of order to orderSigns list
 			quoteCollector.add(q);
 			OrderReport orderRep = lob.processOrder(q, false);
-			clearing(tdr,orderRep);
+			clearing(tdr, orderRep, verbose);
 		}
 	}
 	
@@ -109,15 +115,42 @@ public class Market {
 	 * @param quotingTrader - the guy that submitted the last order
 	 * @param orderRep - the order report
 	 */
-	private void clearing(Trader quotingTrader, OrderReport orderRep) {
+	private void clearing(Trader quotingTrader, OrderReport orderRep, boolean verbose) {
+		if (verbose) {
+			System.out.println("Clearing:");
+		}
 		if (orderRep.isOrderInBook()) {
 			quotingTrader.addOrder(orderRep.getOrder());
+			if (verbose) {
+				System.out.println("Order " + orderRep.getOrder().getqId() +
+									" added to book and Trader" + 
+									quotingTrader.gettId() + " informed");
+			}
 		}
 		for (Trade t : orderRep.getTrades()) {
 			Trader buyer = tradersById.get(t.getBuyer());
 			Trader seller = tradersById.get(t.getSeller());
+			if (verbose) {
+				System.out.println("Book before buyer bookkeep:");
+				System.out.println(this.toString());
+			}
 			buyer.bookkeep(t);
-			seller.bookkeep(t);
+			if (verbose) {
+				System.out.println("Book after buyer bookkeep but before seller:");
+				System.out.println(this.toString());
+			}
+			if (buyer.gettId()!=seller.gettId()) {
+				seller.bookkeep(t);
+				if (verbose) {
+					System.out.println("Book after seller bookkeep:");
+					System.out.println(this.toString());
+				}
+			} else if(verbose) {
+				System.out.println("Buyer and seller were the same, no seller bookkeep.");
+			}
+			
+			
+			
 		}
 	}
 	
