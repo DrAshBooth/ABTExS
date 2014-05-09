@@ -39,48 +39,43 @@ public abstract class Trader {
 											  qId));
 	}
 	
-	public void delOrder(int qId) {
-		ordersInBook.remove(qId);
+//	public void delOrder(int qId) {
+//		ordersInBook.remove(qId);
+//	}
+	
+	
+	public void modifyStoredQuote(int id, int qtyToRemove) {
+		if (ordersInBook.containsKey(id)) {
+			storedQuote sq = ordersInBook.get(id);
+			int qtyRemaining = sq.getQuantity()-qtyToRemove;
+			if (qtyRemaining==0) {
+				ordersInBook.remove(id);
+			} else if (qtyRemaining > 0) {
+				sq.setQuantity(qtyRemaining);
+			} else {
+				throw new IllegalStateException("Trade qty > that order qty" + 
+												" in traders  book");
+			}
+		} else {
+			throw new IllegalStateException("Trader told his order was hit" +
+											"but he has no record of the order!");
+		}
 	}
 	
-	public void bookkeep(Trade t) {
-		if (this.tId == t.getProvider()) { // if my order was sat in the book
-			int orderID = t.getOrderHit(); // Which order was affected 
-			if (ordersInBook.containsKey(orderID)) {
-				storedQuote sq = ordersInBook.get(orderID);
-				int originalQty = sq.getQuantity();
-				if (t.getQty() < originalQty ) { // need to update
-					sq.setQuantity(originalQty-t.getQty());
-				} else if (originalQty == t.getQty()) { //whole order hit
-					ordersInBook.remove(orderID);
-					// TODO check lob for order, if it exist, something is wrong
-				} else { 
-					throw new IllegalArgumentException("What?!?");
-				}
-			} else {
-				throw new IllegalStateException("Trader told his order was hit but he has no record of the order!");
-			}
-		}
-		boolean bought;
-		double price = t.getPrice();
-		int qty = t.getQty();
-		if (this.tId==t.getBuyer()) { // am i the buyer?
-			bought = true;
-			this.cash -= (qty*price);
-			this.numAssets += qty;
-		} else if (this.tId == t.getSeller()) { // am I the seller?
-			bought = false;
+	
+	public void bookkeep(boolean bought, int qty, 
+						 double price, Trade t) {
+		if (bought) {
+			this.cash-= (qty*price);
+			this.numAssets += price;
+		} else {
 			this.cash += (qty*price);
 			this.numAssets -= qty;
-		} else { // WTF?!?!
-			bought = false;
-			System.out.println("Trader has received a trade report " + 
-							   "that he was not part of!!!");
-			System.exit(0);
 		}
 		blotter.add(t);
 		iTraded(bought, price, qty);
 	}
+	
 	
 	protected storedQuote oldestOrder() {
 		int oldestID = -1;

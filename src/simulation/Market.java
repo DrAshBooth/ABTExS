@@ -1,9 +1,5 @@
 package simulation;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,20 +21,19 @@ public class Market {
 	private final int n_FTs;
 	
 	private OrderBook lob;
-	private List<Order> quoteCollector = new ArrayList<Order>();
 	
 	private Random generator = new Random();
 	
-	private String dataDir;
+	private DataCollector data;
 	
 	public Market(Properties prop, String dataDir) {
 		super();
-		this.dataDir = dataDir;
 		this.n_NTs = Integer.valueOf(prop.getProperty("n_NTs"));
 		this.n_MMs = Integer.valueOf(prop.getProperty("n_MMs"));
 		this.n_FTs = Integer.valueOf(prop.getProperty("n_FTs"));
 		
 		lob = new OrderBook(Double.valueOf(prop.getProperty("tick_size")));
+		data = new DataCollector(dataDir, lob);
 		
 		populateMarket(Double.valueOf(prop.getProperty("starting_cash")),
 					   Integer.valueOf(prop.getProperty("starting_assets")),
@@ -91,6 +86,11 @@ public class Market {
 			for (int tId : tIds) {
 				tradersById.get(tId).update(lob);
 			}
+			
+			if (lob.bidsAndAsksExist()) {
+				data.addMidPrice(time, lob.getMid());
+			}
+			
 			if (verbose) {
 				System.out.println(this.toString());
 				System.out.println("----------------------------------------------------------------------------------");
@@ -103,7 +103,7 @@ public class Market {
 		quotes = tdr.getOrders(lob, time, verbose);
 		for (Order q : quotes) {
 			// add sign of order to orderSigns list
-			quoteCollector.add(q);
+			data.quoteCollector.add(q);
 			OrderReport orderRep = lob.processOrder(q, false);
 			clearing(tdr, orderRep, verbose);
 		}
@@ -112,8 +112,9 @@ public class Market {
 	/**
 	 * If an order didn't clear or was partially cleared and was put in the 
 	 * book, the trader that submitted the order is first informed of this.
-	 * Next, we run bookkeep on each trader so that hey can update their books 
-	 * and keep track of what orders have cleared.
+	 * Next, we run bookkeep on each trader so that hey can update their books.
+	 * 
+	 * Finally, we 
 	 * 
 	 * @param quotingTrader - the guy that submitted the last order
 	 * @param orderRep - the order report
@@ -133,28 +134,27 @@ public class Market {
 		for (Trade t : orderRep.getTrades()) {
 			Trader buyer = tradersById.get(t.getBuyer());
 			Trader seller = tradersById.get(t.getSeller());
+			
 			if (verbose) {
-				System.out.println("Book before buyer bookkeep:");
+				System.out.println("Book before bookkeeping:");
 				System.out.println(this.toString());
 			}
-			buyer.bookkeep(t);
+			
+			buyer.bookkeep(true, t.getQty(), t.getPrice(), t);
+			seller.bookkeep(false, t.getQty(), t.getPrice(), t);
+
 			if (verbose) {
-				System.out.println("Book after buyer bookkeep but before seller:");
+				System.out.println("Book after bookkeeping:");
 				System.out.println(this.toString());
 			}
-			if (buyer.gettId()!=seller.gettId()) {
-				seller.bookkeep(t);
-				if (verbose) {
-					System.out.println("Book after seller bookkeep:");
-					System.out.println(this.toString());
-				}
-			} else if(verbose) {
-				System.out.println("Buyer and seller were the same, no seller bookkeep.");
-			}
 			
+			Trader bookOrderOwner = tradersById.get(t.getProvider());
+			int orderID = t.getOrderHit(); // Which order was affected 
 			
+			bookOrderOwner.modifyStoredQuote(orderID, t.getQty());
 			
 		}
+		
 	}
 	
 
@@ -200,51 +200,10 @@ public class Market {
 		this.tIds = new ArrayList<Integer>(tradersById.keySet());
 	}
 	
-	/**************************************************************************
-	 *************************** Writing and Printing *************************
-	 **************************************************************************/
 	
-	public void quotesToCSV(String fName) {
-		try {
-			File dumpFile = new File(dataDir+fName);
-			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
-			output.write("time, type, side, quantity, price, tId\n");
-			for (Order q : quoteCollector) {
-				String quoteString = (q.getTimestamp() + ", " +
-										(q.isLimit() ? "limit" : "market") + ", " + 
-										q.getSide() + ", " +
-										q.getQuantity() + ", ");
-				if (q.isLimit()) {
-					quoteString += q.getPrice();
-				} else {
-					quoteString += "\t";
-				}
-				quoteString += (", " + q.gettId() + "\n");
-				output.write(quoteString);
-			}
-			output.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void tapeToCSV(String fName) {
-		try {
-			File dumpFile = new File(dataDir+fName);
-			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
-			output.write("time, price, quantity, provider, taker, buyer, seller\n");
-			for (Trade t : lob.getTape()) {
-				output.write(t.toCSV());
-			}
-			output.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void writeDaysData(String tradeDataName, String quoteDataName) {
-		tapeToCSV(tradeDataName);
-		quotesToCSV(quoteDataName);
+	public void writeDaysData(String tradeDataName, String quoteDataName,
+							  String midsDataName) {
+		data.writeDaysData(tradeDataName, quoteDataName, midsDataName);
 	}
 	
 	public String toString() {

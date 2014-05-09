@@ -1,7 +1,6 @@
 package traders;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
 
 import lob.*;

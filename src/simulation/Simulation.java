@@ -70,15 +70,14 @@ public class Simulation {
 		System.out.println("Beginning simulation...\n");
 		Properties prop = getProperties("config.properties");
 		int timesteps = Integer.parseInt(prop.getProperty("timesteps"));
-		Market mkt = new Market(prop, "/Users/user/Desktop/");
+		Market mkt = new Market(prop, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/");
 		mkt.run(timesteps, verbose);
-		mkt.writeDaysData("trades.csv", "quotes.csv");
+		mkt.writeDaysData("trades.csv", "quotes.csv", "mids.csv");
 		System.out.println("\nFinished simulation...");
 	}
 	
 	
 	private static Properties getProperties(String filename) {
-		// http://www.mkyong.com/java/java-properties-file-examples/
 		FileInputStream in = null;	
 		Properties prop = null;
 		try {
@@ -105,7 +104,6 @@ public class Simulation {
 	}
 	
 	public static void main(String[] args) {
-		//testLob();
 		marketTrial(false);
 	}
 }
