@@ -71,8 +71,16 @@ public class Simulation {
 		Properties prop = getProperties("config.properties");
 		int timesteps = Integer.parseInt(prop.getProperty("timesteps"));
 		Market mkt = new Market(prop, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/");
-		mkt.run(timesteps, verbose);
-		mkt.writeDaysData("trades.csv", "quotes.csv", "mids.csv");
+		for (int i=0;i<5;i++) {
+			mkt.run(timesteps, verbose);
+			mkt.reset();
+		}
+		System.out.println("\nBuy vols:");
+		System.out.println(mkt.getData().buyVols);
+		System.out.println("\nSell vols:");
+		System.out.println(mkt.getData().sellVols);
+		//mkt.run(timesteps, verbose);
+		//mkt.writeDaysData("trades.csv", "quotes.csv", "mids.csv");
 		System.out.println("\nFinished simulation...");
 	}
 	

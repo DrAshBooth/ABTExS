@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 
 import lob.*;
@@ -23,11 +24,11 @@ public abstract class Trader {
 	public HashMap<Integer, storedQuote> ordersInBook = new HashMap<Integer, storedQuote>();
 	protected Random generator = new Random();
 	
-	public Trader(int tId, double cash, int numAssets) {
+	public Trader(int tId, Properties prop) {
 		super();
 		this.tId = tId;
-		this.cash = cash;
-		this.numAssets = numAssets;
+		this.cash = Double.valueOf(prop.getProperty("starting_cash"));
+		this.numAssets = Integer.valueOf(prop.getProperty("starting_assets"));
 	}
 	
 	public void addOrder(Order order) {
@@ -106,6 +107,7 @@ public abstract class Trader {
 	 * @param trade	// did a 
 	 */
 	public abstract void update(OrderBook lob);
+
 	
 	protected boolean noOrdersInBook() {
 		return this.ordersInBook.isEmpty();

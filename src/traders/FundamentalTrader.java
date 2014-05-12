@@ -1,6 +1,7 @@
 package traders;
 
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.Random;
 
 import lob.*;
@@ -35,12 +36,10 @@ public class FundamentalTrader extends Trader {
 	 * @param cash
 	 * @param numAssets
 	 */
-	public FundamentalTrader(int tId, double cash, 
-						     int numAssets, int orderMin, 
-						     int orderMax) {
-		super(tId, cash, numAssets);
-		this.orderMin = orderMin;
-		this.orderMax = orderMax;
+	public FundamentalTrader(int tId, Properties prop) {
+		super(tId, prop);
+		this.orderMin = Integer.valueOf(prop.getProperty("FT_orderMin"));
+		this.orderMax = Integer.valueOf(prop.getProperty("FT_orderMax"));
 		
 		refreshOrder();
 	}

@@ -26,6 +26,9 @@ public class DataCollector {
 	public List<Order> quoteCollector = new ArrayList<Order>();
 	public List<MidPrice> midPrices = new ArrayList<MidPrice>();
 	
+	public List<Integer> buyVols = new ArrayList<Integer>();
+	public List<Integer> sellVols = new ArrayList<Integer>();
+	
 	public DataCollector(String dataDir, OrderBook lob) {
 		this.dataDir = dataDir;
 		this.lob = lob;
@@ -97,6 +100,24 @@ public class DataCollector {
 		tapeToCSV(tradeDataName);
 		quotesToCSV(quoteDataName);
 		midsToCSV(midDataName);
+	}
+	
+	public void endOfDay() {
+		int buyVol = 0;
+		int sellVol = 0;
+		for (Order q : quoteCollector) {
+			if (q.getSide()=="bid") {
+				buyVol+=q.getQuantity();
+			} else {
+				sellVol+=q.getQuantity();
+			}
+		}
+		this.buyVols.add(buyVol);
+		this.sellVols.add(sellVol);
+		
+
+		quoteCollector.clear();
+		midPrices.clear();
 	}
 
 }

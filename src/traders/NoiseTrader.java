@@ -1,6 +1,7 @@
 package traders;
 
 import java.util.ArrayList;
+import java.util.Properties;
 
 import lob.*;
 
@@ -53,28 +54,23 @@ public class NoiseTrader extends Trader {
 	private final double default_spread;
 	private final double default_price;
 
-	public NoiseTrader(int tId, double cash, int numAssets, double prob_market,
-			double prob_limit, double prob_cancel, double prob_cross,
-			double prob_inside, double prob_at, double prob_deeper,
-			double xmin, double beta, double market_mu, double market_sigma,
-			double limit_mu, double limit_sigma, double default_spread,
-			double default_price) {
-		super(tId, cash, numAssets);
-		this.prob_market = prob_market;
-		this.prob_limit = prob_limit;
-		this.prob_cancel = prob_cancel;
-		this.prob_cross = prob_cross;
-		this.prob_inside = prob_inside;
-		this.prob_at = prob_at;
-		this.prob_deeper = prob_deeper;
-		this.xmin = xmin;
-		this.beta = beta;
-		this.market_mu = market_mu;
-		this.market_sigma = market_sigma;
-		this.limit_mu = limit_mu;
-		this.limit_sigma = limit_sigma;
-		this.default_spread = default_spread;
-		this.default_price = default_price;
+	public NoiseTrader(int tId, Properties prop) {
+		super(tId, prop);
+		this.prob_market = Double.valueOf(prop.getProperty("NT_prob_market"));
+		this.prob_limit = Double.valueOf(prop.getProperty("NT_prob_limit"));
+		this.prob_cancel = Double.valueOf(prop.getProperty("NT_prob_cancel"));
+		this.prob_cross = Double.valueOf(prop.getProperty("NT_prob_cross"));
+		this.prob_inside = Double.valueOf(prop.getProperty("NT_prob_inside"));
+		this.prob_at = Double.valueOf(prop.getProperty("NT_prob_at"));
+		this.prob_deeper = Double.valueOf(prop.getProperty("NT_prob_deeper"));
+		this.xmin = Double.valueOf(prop.getProperty("NT_xmin"));
+		this.beta = Double.valueOf(prop.getProperty("NT_beta"));
+		this.market_mu = Double.valueOf(prop.getProperty("NT_market_mu"));
+		this.market_sigma = Double.valueOf(prop.getProperty("NT_market_sigma"));
+		this.limit_mu = Double.valueOf(prop.getProperty("NT_limit_mu"));
+		this.limit_sigma = Double.valueOf(prop.getProperty("NT_limit_sigma"));
+		this.default_spread = Double.valueOf(prop.getProperty("default_spread"));
+		this.default_price = Double.valueOf(prop.getProperty("default_price"));
 	}
 
 	@Override

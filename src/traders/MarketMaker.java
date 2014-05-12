@@ -3,6 +3,7 @@ package traders;
 
 import java.util.ArrayList;
 import java.util.LinkedList; 
+import java.util.Properties;
 
 import lob.*;
 
@@ -55,13 +56,12 @@ public class MarketMaker extends Trader {
 	 * @param vMax			see paper
 	 * @param vMinus		see paper
 	 */
-	public MarketMaker(int tId, double cash, int numAssets, 
-					   int rollMeanLen, int vMin, int vMax, int vMinus) {
-		super(tId, cash, numAssets);
-		this.rollMeanLen = rollMeanLen;
-		this.vMin = vMin;
-		this.vMax = vMax;
-		this.vMinus = vMinus;
+	public MarketMaker(int tId, Properties prop) {
+		super(tId, prop);
+		this.rollMeanLen = Integer.valueOf(prop.getProperty("MM_rollMeanLen"));
+		this.vMin = Integer.valueOf(prop.getProperty("MM_vMin"));
+		this.vMax = Integer.valueOf(prop.getProperty("MM_vMax"));
+		this.vMinus = Integer.valueOf(prop.getProperty("MM_vMinus"));
 	}
 
 	@Override
