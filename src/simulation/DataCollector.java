@@ -21,13 +21,26 @@ public class DataCollector {
 		}
 	}
 	
+	class DaySummary {
+		public int nBuyOrders;
+		public int nSellOrders;
+		public int buyVolume;
+		public int sellVolume;
+		
+		public DaySummary(int nBuyOrders, int nSellOrders, 
+						  int buyVolume, int sellVolume) {
+			this.nBuyOrders = nBuyOrders;
+			this.nSellOrders = nSellOrders;
+			this.buyVolume = buyVolume;
+			this.sellVolume = sellVolume;
+		}
+	}
+	
 	public String dataDir;
 	private OrderBook lob;
 	public List<Order> quoteCollector = new ArrayList<Order>();
+	public List<DaySummary> daySummaries = new ArrayList<DaySummary>();
 	public List<MidPrice> midPrices = new ArrayList<MidPrice>();
-	
-	public List<Integer> buyVols = new ArrayList<Integer>();
-	public List<Integer> sellVols = new ArrayList<Integer>();
 	
 	public DataCollector(String dataDir, OrderBook lob) {
 		this.dataDir = dataDir;
@@ -36,6 +49,26 @@ public class DataCollector {
 	
 	public void addMidPrice(int time, double price) {
 		midPrices.add(new MidPrice(time, price));
+	}
+	
+	public void endOfDay() {
+		int buyVol = 0;
+		int nBuys = 0;
+		int sellVol = 0;
+		int nSells = 0;
+		for (Order q : quoteCollector) {
+			if (q.getSide()=="bid") {
+				buyVol+=q.getQuantity();
+				nBuys+=1;
+			} else {
+				sellVol+=q.getQuantity();
+				nSells+=1;
+			}
+		}
+		daySummaries.add(new DaySummary(nBuys, nSells, buyVol, sellVol));
+
+		quoteCollector.clear();
+		midPrices.clear();
 	}
 	
 	/**************************************************************************
@@ -102,22 +135,24 @@ public class DataCollector {
 		midsToCSV(midDataName);
 	}
 	
-	public void endOfDay() {
-		int buyVol = 0;
-		int sellVol = 0;
-		for (Order q : quoteCollector) {
-			if (q.getSide()=="bid") {
-				buyVol+=q.getQuantity();
-			} else {
-				sellVol+=q.getQuantity();
+	public void writeSimData(String simfile) {
+		try {
+			File dumpFile = new File(dataDir+simfile);
+			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
+			output.write("day, nBids, nOffers, bidVol, offerVol\n");
+			int i =1;
+			for(DaySummary d : daySummaries) {
+				output.write(i + ", " + 
+							 d.nBuyOrders + ", " + 
+							 d.nSellOrders + ", " + 
+							 d.buyVolume + ", " + 
+							 d.sellVolume + "\n");
+				i+=1;
 			}
+			output.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		this.buyVols.add(buyVol);
-		this.sellVols.add(sellVol);
-		
-
-		quoteCollector.clear();
-		midPrices.clear();
 	}
 
 }

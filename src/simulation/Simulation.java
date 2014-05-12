@@ -8,8 +8,9 @@ import java.util.Properties;
 import lob.Order;
 import lob.OrderBook;
 
-// TODO inSpread limits are causing trades from time to time, they shouldn't
-// TODO I think the problem occurs when an inspread limit is hit
+// TODO BUG upward price movement
+// Findings:
+// 		- use t-test to compare nBids vs nOffers and bidVol vs offerVol
 
 public class Simulation {
 	
@@ -71,14 +72,11 @@ public class Simulation {
 		Properties prop = getProperties("config.properties");
 		int timesteps = Integer.parseInt(prop.getProperty("timesteps"));
 		Market mkt = new Market(prop, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/");
-		for (int i=0;i<5;i++) {
+		for (int i=0;i<1000;i++) {
 			mkt.run(timesteps, verbose);
 			mkt.reset();
 		}
-		System.out.println("\nBuy vols:");
-		System.out.println(mkt.getData().buyVols);
-		System.out.println("\nSell vols:");
-		System.out.println(mkt.getData().sellVols);
+		mkt.writeSimData("simData.csv");
 		//mkt.run(timesteps, verbose);
 		//mkt.writeDaysData("trades.csv", "quotes.csv", "mids.csv");
 		System.out.println("\nFinished simulation...");
