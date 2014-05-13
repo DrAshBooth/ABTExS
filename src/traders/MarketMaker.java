@@ -110,18 +110,18 @@ public class MarketMaker extends Trader {
 		for (int i : lastOrderSigns) {
 			sum += i;
 		}
-		double average = sum/lastOrderSigns.size();
-		if (average >= 0) {
+		if (sum > 0) {
 			this.nextSignPred = 1;
-		} else {
+		} else if (sum < 0){
 			this.nextSignPred = -1;
+		}else {
+			this.nextSignPred = this.generator.nextBoolean() ? 1 : -1;
 		}
 	}
 
 	@Override
 	protected void iTraded(boolean bought, double price, int qty) {
-		// TODO Auto-generated method stub
-		
+
 	}
 	
 
