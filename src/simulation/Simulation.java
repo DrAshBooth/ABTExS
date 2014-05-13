@@ -10,7 +10,8 @@ import lob.OrderBook;
 
 // TODO BUG upward price movement
 // Findings:
-// 		- use t-test to compare nBids vs nOffers and bidVol vs offerVol
+// 		- NTs and fundamentals are fine
+//		- I think MMs are upward biased
 
 public class Simulation {
 	
@@ -67,18 +68,25 @@ public class Simulation {
 	}
 	
 	
-	private static void marketTrial(boolean verbose) {
+	private static void marketTrial(boolean verbose, String dataDir) {
 		System.out.println("Beginning simulation...\n");
 		Properties prop = getProperties("config.properties");
 		int timesteps = Integer.parseInt(prop.getProperty("timesteps"));
-		Market mkt = new Market(prop, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/");
-		for (int i=0;i<1000;i++) {
-			mkt.run(timesteps, verbose);
-			mkt.reset();
-		}
+		Market mkt = new Market(prop, dataDir);
+//		for (int i=0;i<1000;i++) {
+//			mkt.run(timesteps, verbose);
+//			mkt.reset();
+//		}
+//		mkt.writeSimData("simData.csv");
+		mkt.run(timesteps, verbose);
+		mkt.writeDaysData("trades.csv", "quotes.csv", "mids.csv");
+		mkt.reset();
 		mkt.writeSimData("simData.csv");
-		//mkt.run(timesteps, verbose);
-		//mkt.writeDaysData("trades.csv", "quotes.csv", "mids.csv");
+		try {
+			Runtime.getRuntime().exec("Rscript " + dataDir + "day_in_pictures.r");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		System.out.println("\nFinished simulation...");
 	}
 	
@@ -110,6 +118,6 @@ public class Simulation {
 	}
 	
 	public static void main(String[] args) {
-		marketTrial(false);
+		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/");
 	}
 }
