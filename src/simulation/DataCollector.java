@@ -37,26 +37,33 @@ public class DataCollector {
 	}
 	
 	public String dataDir;
-	private OrderBook lob;
-	public List<Order> quoteCollector = new ArrayList<Order>();
+	public String dataExt = ".csv";
+	
+	public ArrayList<ArrayList<Order>> quoteCollector = new ArrayList<ArrayList<Order>>();
+	public ArrayList<ArrayList<MidPrice>> midPrices = new ArrayList<ArrayList<MidPrice>>();
+	public ArrayList<List<Trade>> trades = new ArrayList<List<Trade>>();
+	
 	public List<DaySummary> daySummaries = new ArrayList<DaySummary>();
-	public List<MidPrice> midPrices = new ArrayList<MidPrice>();
 	
-	public DataCollector(String dataDir, OrderBook lob) {
+	public DataCollector(String dataDir, int nRuns) {
 		this.dataDir = dataDir;
-		this.lob = lob;
+		for (int i=0;i<nRuns;i++) {
+			quoteCollector.add(new ArrayList<Order>());
+			midPrices.add(new ArrayList<MidPrice>());
+		}
 	}
 	
-	public void addMidPrice(int time, double price) {
-		midPrices.add(new MidPrice(time, price));
+	public void addMidPrice(int time, double price, int idx) {
+		midPrices.get(idx).add(new MidPrice(time, price));
 	}
 	
-	public void endOfDay() {
+	public void endOfDay(int idx, OrderBook lob) {
 		int buyVol = 0;
 		int nBuys = 0;
 		int sellVol = 0;
 		int nSells = 0;
-		for (Order q : quoteCollector) {
+		ArrayList<Order> dayInQuestion = quoteCollector.get(idx);
+		for (Order q : dayInQuestion) {
 			if (q.getSide()=="bid") {
 				buyVol+=q.getQuantity();
 				nBuys+=1;
@@ -65,25 +72,25 @@ public class DataCollector {
 				nSells+=1;
 			}
 		}
+		//add tape to trades DB
 		daySummaries.add(new DaySummary(nBuys, nSells, buyVol, sellVol));
-
-		quoteCollector.clear();
-		midPrices.clear();
+		trades.add(lob.getTape());
 	}
 	
 	/**************************************************************************
 	 *************************** Writing and Printing *************************
 	 **************************************************************************/
 	
-	public void quotesToCSV(String fName) {
+	public void dayQuotesToCSV(String fName, int idx) {
 		try {
-			File dumpFile = new File(dataDir+fName);
+			File dumpFile = new File(dataDir+fName+dataExt);
 			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
 			output.write("time, type, side, quantity, price, tId\n");
-			for (Order q : quoteCollector) {
+			ArrayList<Order> dayInQuestion = quoteCollector.get(idx);
+			for (Order q : dayInQuestion) {
 				String quoteString = (q.getTimestamp() + ", " +
 										(q.isLimit() ? "limit" : "market") + ", " + 
-										q.getSide() + ", " +
+										((q.getSide()=="bid") ? "1" : "-1") + ", " +
 										q.getQuantity() + ", ");
 				if (q.isLimit()) {
 					quoteString += q.getPrice();
@@ -99,12 +106,13 @@ public class DataCollector {
 		}
 	}
 	
-	public void midsToCSV(String fName) {
+	public void dayMidsToCSV(String fName, int idx) {
 		try {
-			File dumpFile = new File(dataDir+fName);
+			File dumpFile = new File(dataDir+fName+dataExt);
 			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
-			output.write("time, price");
-			for (MidPrice m : midPrices) {
+			output.write("time, price\n");
+			ArrayList<MidPrice> dayInQuestion = midPrices.get(idx);
+			for (MidPrice m : dayInQuestion) {
 				String l = (m.time + ", " + m.price +"\n");
 				output.write(l);
 			}
@@ -114,12 +122,13 @@ public class DataCollector {
 		}
 	}
 	
-	public void tapeToCSV(String fName) {
+	public void dayTradesToCSV(String fName, int idx) {
 		try {
-			File dumpFile = new File(dataDir+fName);
+			File dumpFile = new File(dataDir+fName+dataExt);
 			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
 			output.write("time, price, quantity, provider, taker, buyer, seller\n");
-			for (Trade t : lob.getTape()) {
+			List<Trade> dayInQuestion = trades.get(idx);
+			for (Trade t : dayInQuestion) {
 				output.write(t.toCSV());
 			}
 			output.close();
@@ -129,15 +138,38 @@ public class DataCollector {
 	}
 	
 	public void writeDaysData(String tradeDataName, String quoteDataName,
-							  String midDataName) {
-		tapeToCSV(tradeDataName);
-		quotesToCSV(quoteDataName);
-		midsToCSV(midDataName);
+							  String midDataName, int idx) {
+		dayTradesToCSV(tradeDataName, idx);
+		dayQuotesToCSV(quoteDataName, idx);
+		dayMidsToCSV(midDataName, idx);
 	}
 	
-	public void writeSimData(String simfile) {
+	public void writeSimQuotes(String fName) {
+		for (int i=0; i<quoteCollector.size(); i++) {
+			dayQuotesToCSV(fName+i, i);
+		}
+	}
+	
+	public void writeSimMids(String fName) {
+		for (int i=0; i<midPrices.size(); i++) {
+			dayMidsToCSV(fName+i, i);
+		}
+	}
+	
+	public void writeSimTrades(String fName) {
+		for (int i=0; i<trades.size(); i++) {
+			dayTradesToCSV(fName+i, i);
+		}
+	}
+	
+	public void writeSimData(String tradeDataName, String quoteDataName,
+			    			 String midDataName, String simFile) {
+		
+		writeSimQuotes(quoteDataName);
+		writeSimMids(midDataName);
+		writeSimTrades(tradeDataName);
 		try {
-			File dumpFile = new File(dataDir+simfile);
+			File dumpFile = new File(dataDir+simFile+dataExt);
 			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
 			output.write("day, nBids, nOffers, bidVol, offerVol\n");
 			int i =1;

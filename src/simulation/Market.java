@@ -22,14 +22,13 @@ public class Market {
 	private final int n_FTs;
 	
 	private Properties properties;
-
 	private OrderBook lob;
-	
+	private DataCollector data;
 	private Random generator = new Random();
 	
-	private DataCollector data;
+	int runNumber;
 	
-	public Market(Properties prop, String dataDir) {
+	public Market(Properties prop, DataCollector data) {
 		super();
 		this.n_NTs = Integer.valueOf(prop.getProperty("n_NTs"));
 		this.n_MMs = Integer.valueOf(prop.getProperty("n_MMs"));
@@ -37,13 +36,15 @@ public class Market {
 		
 		this.properties = prop;
 		
-		lob = new OrderBook(Double.valueOf(prop.getProperty("tick_size")));
-		data = new DataCollector(dataDir, lob);
+		this.lob = new OrderBook(Double.valueOf(prop.getProperty("tick_size")));
+		this.data = data;
 		
 		populateMarket();
 	}
 	
-	public void run(int timesteps, boolean verbose) {
+	public void run(int timesteps, int runNumber, boolean verbose) {
+		
+		this.runNumber = runNumber;
 		
 		for (int time = 1; time <= timesteps; time++) {
 //			if (time%1000 == 0) {
@@ -71,7 +72,7 @@ public class Market {
 			}
 			
 			if (lob.bidsAndAsksExist()) {
-				data.addMidPrice(time, lob.getMid());
+				data.addMidPrice(time, lob.getMid(), runNumber);
 			}
 			
 			if (verbose) {
@@ -86,7 +87,7 @@ public class Market {
 		quotes = tdr.getOrders(lob, time, verbose);
 		for (Order q : quotes) {
 			// add sign of order to orderSigns list
-			data.quoteCollector.add(q);
+			data.quoteCollector.get(runNumber).add(q);
 			OrderReport orderRep = lob.processOrder(q, false);
 			clearing(tdr, orderRep, verbose);
 		}
@@ -142,7 +143,6 @@ public class Market {
 	
 
 	private void populateMarket() {
-		
 		int tId = 0;
 		ArrayList<Trader> noiseTraders = new ArrayList<Trader>();
 		ArrayList<Trader> marketMakers = new ArrayList<Trader>();
@@ -177,18 +177,8 @@ public class Market {
 		tradersByType.clear();
 		tIds.clear();
 		populateMarket();
-		data.endOfDay();
+		data.endOfDay(runNumber, lob);
 	}
-	
-	
-	public void writeDaysData(String tradeDataName, String quoteDataName,
-							  String midsDataName) {
-		data.writeDaysData(tradeDataName, quoteDataName, midsDataName);
-	}
-	
-	public void writeSimData(String simDataName) {
-		data.writeSimData(simDataName);
-}
 	
 	public String toString() {
 		StringWriter fileStr = new StringWriter();
@@ -198,10 +188,6 @@ public class Market {
 			fileStr.write(tradersById.get(tId).toString());
 		}
 		return fileStr.toString();
-	}
-
-	public DataCollector getData() {
-		return data;
 	}
 
 }

@@ -64,35 +64,61 @@ public class MarketMaker extends Trader {
 		this.vMinus = Integer.valueOf(prop.getProperty("MM_vMinus"));
 	}
 
+//	@Override
+//	public ArrayList<Order> getOrders(OrderBook lob, int time, boolean verbose) {
+//		ArrayList<Order> ordersToGo = new ArrayList<Order>();
+//		if ( (this.ordersInBook.size() != 2)  || (nextSignPred != lastSignPred) ) {
+//			// remove all current orders from lob
+//			for(Integer orderId: this.ordersInBook.keySet()) {
+//				String side = this.ordersInBook.get(orderId).getSide();
+//				lob.cancelOrder(side, orderId, time);
+//			}
+//			this.ordersInBook.clear();
+//			
+//			// Submit new bid and offer
+//			double bidPrice = lob.getBestBid();
+//			double offerPrice = lob.getBestOffer();
+//			int bidQty, offerQty;
+//			if (this.nextSignPred > 0) {
+//				// we predict a buy next
+//				offerQty = (vMin + generator.nextInt(vMax-vMin+1));
+//				bidQty = vMinus;
+//			} else {
+//				// we predict a sell next
+//				bidQty = (vMin + generator.nextInt(vMax-vMin+1));
+//				offerQty = vMinus;
+//			}
+//			ordersToGo.add(new Order(time, true, bidQty, tId, "bid", bidPrice));
+//			ordersToGo.add(new Order(time, true, offerQty, tId, "offer", offerPrice));
+//		}
+//		return ordersToGo;
+//	}
+	
 	@Override
 	public ArrayList<Order> getOrders(OrderBook lob, int time, boolean verbose) {
 		ArrayList<Order> ordersToGo = new ArrayList<Order>();
-		if ( (this.ordersInBook.size() != 2)  || (nextSignPred != lastSignPred) ) {
-			// remove all current orders from lob
-			for(Integer orderId: this.ordersInBook.keySet()) {
-				String side = this.ordersInBook.get(orderId).getSide();
-				lob.cancelOrder(side, orderId, time);
-			}
-			this.ordersInBook.clear();
+		
 			
-			// Submit new bid and offer
-			double bidPrice = lob.getBestBid();
-			double offerPrice = lob.getBestOffer();
-			int bidQty, offerQty;
-			if (this.nextSignPred > 0) {
-				// we predict a buy next
-				offerQty = (vMin + generator.nextInt(vMax-vMin+1));
-				bidQty = vMinus;
-			} else {
-				// we predict a sell next
-				bidQty = (vMin + generator.nextInt(vMax-vMin+1));
-				offerQty = vMinus;
-			}
-			ordersToGo.add(new Order(time, true, bidQty, tId, "bid", bidPrice));
-			ordersToGo.add(new Order(time, true, offerQty, tId, "offer", offerPrice));
+		// remove all current orders from lob
+		for(Integer orderId: this.ordersInBook.keySet()) {
+			String side = this.ordersInBook.get(orderId).getSide();
+			lob.cancelOrder(side, orderId, time);
 		}
+		this.ordersInBook.clear();
+			
+		// Submit new bid and offer
+		double bidPrice = lob.getBestBid();
+		double offerPrice = lob.getBestOffer();
+		int bidQty, offerQty;
+		
+		offerQty = (vMin + generator.nextInt(vMax-vMin+1));
+		bidQty = (vMin + generator.nextInt(vMax-vMin+1));
+
+		ordersToGo.add(new Order(time, true, bidQty, tId, "bid", bidPrice));
+		ordersToGo.add(new Order(time, true, offerQty, tId, "offer", offerPrice));
 		return ordersToGo;
 	}
+
 
 	@Override
 	public void update(OrderBook lob) {
