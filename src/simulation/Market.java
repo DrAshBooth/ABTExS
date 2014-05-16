@@ -21,6 +21,10 @@ public class Market {
 	private final int n_MMs;
 	private final int n_FTs;
 	
+	private final double p_NT;
+	private final double p_MM;
+	private final double p_FT;
+	
 	private Properties properties;
 	private OrderBook lob;
 	private DataCollector data;
@@ -33,6 +37,9 @@ public class Market {
 		this.n_NTs = Integer.valueOf(prop.getProperty("n_NTs"));
 		this.n_MMs = Integer.valueOf(prop.getProperty("n_MMs"));
 		this.n_FTs = Integer.valueOf(prop.getProperty("n_FTs"));
+		this.p_NT = Double.valueOf(prop.getProperty("p_NT"));
+		this.p_MM = Double.valueOf(prop.getProperty("p_MM"));
+		this.p_FT = Double.valueOf(prop.getProperty("p_FT"));
 		
 		this.properties = prop;
 		
@@ -47,9 +54,6 @@ public class Market {
 		this.runNumber = runNumber;
 		
 		for (int time = 1; time <= timesteps; time++) {
-//			if (time%1000 == 0) {
-//				System.out.println("time = " + time);
-//			}
 			if (verbose) {
 				System.out.println("----- time = " + time + 
 									"-------------------------------------------------------------------");
@@ -61,9 +65,22 @@ public class Market {
 				tdr = tradersByType.get("NT").get(ntIdx);
 				submitOrder(tdr,time, verbose); // deals with clearing and bookkeeping
 			} else {
-				// pick random trader
-				int randTId = tIds.get(generator.nextInt(tIds.size()));
-				tdr = tradersById.get(randTId);
+				// pick random trader (according to probs)
+				ArrayList<Trader> tempTraders;
+				double p = generator.nextDouble();
+				if (p < p_NT) {
+					// Pick NTs
+					tempTraders = tradersByType.get("NT");
+				} else if (p < (p_NT+p_MM)) {
+					// Pick MMs
+					tempTraders = tradersByType.get("MM");
+				} else {
+					// Pick FTs
+					tempTraders = tradersByType.get("FT");
+				}
+				// Pick random trader from group
+				int idx = generator.nextInt(tempTraders.size());
+				tdr = tempTraders.get(idx);
 				submitOrder(tdr,time, verbose);
 			}
 			//update all traders
@@ -74,7 +91,6 @@ public class Market {
 			if (lob.bidsAndAsksExist()) {
 				data.addMidPrice(time, lob.getMid(), runNumber);
 			}
-			
 			if (verbose) {
 				System.out.println(this.toString());
 				System.out.println("----------------------------------------------------------------------------------");

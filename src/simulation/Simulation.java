@@ -9,12 +9,11 @@ import java.util.Properties;
 
 import lob.Order;
 import lob.OrderBook;
-
+// TODO BUG null pointer in bestprice when very few NTs
 // TODO BUG upward price movement
 // Findings:
 // 		- NTs and fundamentals are fine
 //		- I think MMs are upward biased
-// TODO print all MM orders to a file look at statistics
 
 public class Simulation {
 	
@@ -36,15 +35,18 @@ public class Simulation {
 			mkt.reset();
 			System.out.println("Run " + i + " DONE");
 		}
-		data.writeSimData("trades", "quotes", "mids", "simFile");
+		data.writeSimData(prop.getProperty("tradesFName"), 
+						  prop.getProperty("quotesFName"),
+						  prop.getProperty("midsFName"),
+						  prop.getProperty("simFile"));;
 		
 //		try {
 //			Runtime.getRuntime().exec("Rscript " + dataDir + "day_in_pictures.r");
 //		} catch (IOException e) {
 //			e.printStackTrace();
 //		}
-		
 		System.out.println("\nFinished simulation...");
+		runStats(nRuns, prop);
 	}
 	
 	
@@ -70,11 +72,14 @@ public class Simulation {
 		
 	}
 	
-	public void runStats() {
+	public static void runStats(int nRuns, Properties prop) {
 		try {
-			// TODO run simSummary with cmdline args
+			String cmd = "rscript simSummary.r --dir=" + data.dataDir + 
+					" --nRuns=" + nRuns + 
+					" --quotesF=" + prop.getProperty("quotesFName") +
+					" --midsF=" + prop.getProperty("midsFName");
 			System.out.println("r Script is running in the background, be patient!");
-			Process p = Runtime.getRuntime().exec("Rscript " + data.dataDir + "day_in_pictures.r");
+			Process p = Runtime.getRuntime().exec(cmd);
 			p.waitFor();
 	        BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));  
 	        String line = null;  
@@ -87,6 +92,6 @@ public class Simulation {
 	}
 	
 	public static void main(String[] args) {
-		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/output/", 100);
+		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/output/", 5);
 	}
 }

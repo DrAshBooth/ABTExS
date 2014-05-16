@@ -47,6 +47,7 @@ public class DataCollector {
 	
 	public DataCollector(String dataDir, int nRuns) {
 		this.dataDir = dataDir;
+		
 		for (int i=0;i<nRuns;i++) {
 			quoteCollector.add(new ArrayList<Order>());
 			midPrices.add(new ArrayList<MidPrice>());
