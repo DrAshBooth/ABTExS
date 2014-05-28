@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import lob.*;
 
 public class DataCollector {
@@ -18,6 +17,17 @@ public class DataCollector {
 		public MidPrice(int time, double price) {
 			this.time = time;
 			this.price = price;
+		}
+	}
+	
+	class Impact {
+		public int time;
+		public double impact;
+		public int volume;
+		public Impact(int time, double impact, int volume) {
+			this.time = time;
+			this.impact = impact;
+			this.volume = volume;
 		}
 	}
 	
@@ -39,11 +49,14 @@ public class DataCollector {
 	public String dataDir;
 	public String dataExt = ".csv";
 	
+	public List<DaySummary> daySummaries = new ArrayList<DaySummary>();
+	
 	public ArrayList<ArrayList<Order>> quoteCollector = new ArrayList<ArrayList<Order>>();
 	public ArrayList<ArrayList<MidPrice>> midPrices = new ArrayList<ArrayList<MidPrice>>();
+	public ArrayList<ArrayList<Impact>> impacts = new ArrayList<ArrayList<Impact>>();
 	public ArrayList<List<Trade>> trades = new ArrayList<List<Trade>>();
 	
-	public List<DaySummary> daySummaries = new ArrayList<DaySummary>();
+	public ArrayList<Integer> dailyVolumes = new ArrayList<Integer>();
 	
 	public DataCollector(String dataDir, int nRuns) {
 		this.dataDir = dataDir;
@@ -51,6 +64,7 @@ public class DataCollector {
 		for (int i=0;i<nRuns;i++) {
 			quoteCollector.add(new ArrayList<Order>());
 			midPrices.add(new ArrayList<MidPrice>());
+			impacts.add(new ArrayList<Impact>());
 		}
 	}
 	
@@ -58,12 +72,31 @@ public class DataCollector {
 		midPrices.get(runNumber).add(new MidPrice(time, price));
 	}
 	
-	public void endOfDay(int idx, OrderBook lob) {
+	
+	/*
+	 * Impact is measured as the log difference before and after the market
+	 * order arrives.
+	 * 
+	 * At the end of the day, the volumes must be normalised by the total day's 
+	 * volume.
+	 */
+	public void addImpact(int time, 
+						  double before, double after, 
+						  int volume, int runNumber) {
+		double impact = Math.log(after) - Math.log(before);
+		impacts.get(runNumber).add(new Impact(time, impact, volume));
+	}
+	
+	public void addDaysVolume (int vol) {
+		dailyVolumes.add(vol);
+	}
+	
+	public void endOfDay(int runNumber, OrderBook lob, int todaysVol) {
 		int buyVol = 0;
 		int nBuys = 0;
 		int sellVol = 0;
 		int nSells = 0;
-		ArrayList<Order> dayInQuestion = quoteCollector.get(idx);
+		ArrayList<Order> dayInQuestion = quoteCollector.get(runNumber);
 		for (Order q : dayInQuestion) {
 			if (q.getSide()=="bid") {
 				buyVol+=q.getQuantity();
@@ -76,6 +109,12 @@ public class DataCollector {
 		//add tape to trades DB
 		daySummaries.add(new DaySummary(nBuys, nSells, buyVol, sellVol));
 		trades.add(new ArrayList<Trade>(lob.getTape()));
+		addDaysVolume(todaysVol);
+		// TODO normalise all impact quantities by daily vol
+		ArrayList<Impact> todaysImpacts = impacts.get(runNumber);
+		for(Impact i : todaysImpacts) {
+			i.volume /= todaysVol;
+		}
 	}
 	
 	/**************************************************************************
@@ -138,11 +177,31 @@ public class DataCollector {
 		}
 	}
 	
-	public void writeDaysData(String tradeDataName, String quoteDataName,
-							  String midDataName, int idx) {
+	public void dayImpactsToCSV(String fName, int idx) {
+		try {
+			File dumpFile = new File(dataDir+fName+dataExt);
+			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));
+			output.write("volume, impact\n");
+			ArrayList<Impact> dayInQuestion = impacts.get(idx);
+			for (Impact i : dayInQuestion) {
+				String l = (i.volume + ", " + i.impact+"\n");
+				output.write(l);
+			}
+			output.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void writeDaysData(String tradeDataName, 
+							  String quoteDataName,
+							  String midDataName, 
+							  String impactDataName,
+							  int idx) {
 		dayTradesToCSV(tradeDataName, idx);
 		dayQuotesToCSV(quoteDataName, idx);
 		dayMidsToCSV(midDataName, idx);
+		dayImpactsToCSV(impactDataName, idx);
 	}
 	
 	public void writeSimQuotes(String fName) {
@@ -163,12 +222,22 @@ public class DataCollector {
 		}
 	}
 	
-	public void writeSimData(String tradeDataName, String quoteDataName,
-			    			 String midDataName, String simFile) {
+	public void writeSimImpacts(String fName) {
+		for (int i=0; i<trades.size(); i++) {
+			dayImpactsToCSV(fName+i, i);
+		}
+	}
+	
+	public void writeSimData(String tradeDataName, 
+							 String quoteDataName,
+			    			 String midDataName, 
+			    			 String impactDataName,
+			    			 String simFile) {
 		
 		writeSimQuotes(quoteDataName);
 		writeSimMids(midDataName);
 		writeSimTrades(tradeDataName);
+		writeSimImpacts(impactDataName);
 		try {
 			File dumpFile = new File(dataDir+simFile+dataExt);
 			BufferedWriter output = new BufferedWriter(new FileWriter(dumpFile));

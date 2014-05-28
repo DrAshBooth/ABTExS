@@ -11,6 +11,7 @@ import lob.Order;
 import lob.OrderBook;
 // TODO BUG null pointer in bestprice when very few NTs
 // TODO BUG upward price movement
+// TODO bin the stats to smooth data
 // Findings:
 // 		- NTs and fundamentals are fine
 //		- I think MMs are upward biased
@@ -38,6 +39,7 @@ public class Simulation {
 		data.writeSimData(prop.getProperty("tradesFName"), 
 						  prop.getProperty("quotesFName"),
 						  prop.getProperty("midsFName"),
+						  prop.getProperty("impactsFName"),
 						  prop.getProperty("simFName"));;
 		
 //		try {
@@ -92,6 +94,6 @@ public class Simulation {
 	}
 	
 	public static void main(String[] args) {
-		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/output/", 1);
+		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/output/", 100);
 	}
 }

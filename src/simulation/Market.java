@@ -31,6 +31,7 @@ public class Market {
 	private Random generator = new Random();
 	
 	int runNumber;
+	int todaysVol=0;
 	
 	public Market(Properties prop, DataCollector data) {
 		super();
@@ -96,7 +97,7 @@ public class Market {
 				System.out.println("----------------------------------------------------------------------------------");
 			}
 		}
-		data.endOfDay(runNumber, lob);
+		data.endOfDay(runNumber, lob, todaysVol);
 	}
 	
 	private void submitOrder(Trader tdr, int time, boolean verbose) {
@@ -105,8 +106,18 @@ public class Market {
 		for (Order q : quotes) {
 			// add sign of order to orderSigns list
 			data.quoteCollector.get(runNumber).add(q);
+			
+			// for impact
+			double beforePrice = lob.getMid();
+			int orderQty = q.getQuantity();
+			
 			OrderReport orderRep = lob.processOrder(q, false);
 			clearing(tdr, orderRep, verbose);
+			// Check if market order, if so measure impact
+			if (!q.isLimit()) {
+				double afterPrice = lob.getMid();
+				data.addImpact(time, beforePrice, afterPrice, orderQty, runNumber);
+			}
 		}
 	}
 	
@@ -151,9 +162,9 @@ public class Market {
 			
 			Trader bookOrderOwner = tradersById.get(t.getProvider());
 			int orderID = t.getOrderHit(); // Which order was affected 
-			
 			bookOrderOwner.modifyStoredQuote(orderID, t.getQty());
 			
+			todaysVol+=t.getQty();
 		}
 		
 	}
@@ -193,6 +204,7 @@ public class Market {
 		tradersById.clear();
 		tradersByType.clear();
 		tIds.clear();
+		todaysVol = 0;
 		populateMarket();
 	}
 	
