@@ -54,8 +54,8 @@ public class DataCollector {
 		}
 	}
 	
-	public void addMidPrice(int time, double price, int idx) {
-		midPrices.get(idx).add(new MidPrice(time, price));
+	public void addMidPrice(int time, double price, int runNumber) {
+		midPrices.get(runNumber).add(new MidPrice(time, price));
 	}
 	
 	public void endOfDay(int idx, OrderBook lob) {
@@ -75,7 +75,7 @@ public class DataCollector {
 		}
 		//add tape to trades DB
 		daySummaries.add(new DaySummary(nBuys, nSells, buyVol, sellVol));
-		trades.add(lob.getTape());
+		trades.add(new ArrayList<Trade>(lob.getTape()));
 	}
 	
 	/**************************************************************************

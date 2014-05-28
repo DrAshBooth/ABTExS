@@ -96,6 +96,7 @@ public class Market {
 				System.out.println("----------------------------------------------------------------------------------");
 			}
 		}
+		data.endOfDay(runNumber, lob);
 	}
 	
 	private void submitOrder(Trader tdr, int time, boolean verbose) {
@@ -193,7 +194,6 @@ public class Market {
 		tradersByType.clear();
 		tIds.clear();
 		populateMarket();
-		data.endOfDay(runNumber, lob);
 	}
 	
 	public String toString() {

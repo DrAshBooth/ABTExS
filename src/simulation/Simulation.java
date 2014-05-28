@@ -38,7 +38,7 @@ public class Simulation {
 		data.writeSimData(prop.getProperty("tradesFName"), 
 						  prop.getProperty("quotesFName"),
 						  prop.getProperty("midsFName"),
-						  prop.getProperty("simFile"));;
+						  prop.getProperty("simFName"));;
 		
 //		try {
 //			Runtime.getRuntime().exec("Rscript " + dataDir + "day_in_pictures.r");
@@ -46,7 +46,7 @@ public class Simulation {
 //			e.printStackTrace();
 //		}
 		System.out.println("\nFinished simulation...");
-		runStats(nRuns, prop);
+//		runStats(nRuns, prop);
 	}
 	
 	
@@ -92,6 +92,6 @@ public class Simulation {
 	}
 	
 	public static void main(String[] args) {
-		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/output/", 5);
+		marketTrial(false, "/Users/user/Dropbox/PhD_ICSS/Research/ABM/output/", 1);
 	}
 }
